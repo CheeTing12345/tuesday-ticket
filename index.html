@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Hey There! Special Delivery 🎁</title>
+  <title>Special Delivery 🎁</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -495,9 +495,72 @@
       87%  { transform: translateX(-2px); }
       100% { transform: translateX(0); }
     }
-    .shaking {
-      animation: screenShake 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    /* Second input — hidden initially */
+    #second-input-wrap {
+      position: relative;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.35s ease, opacity 0.35s ease, margin-top 0.35s ease;
+      margin-top: 0;
     }
+    #second-input-wrap.show {
+      max-height: 120px;
+      opacity: 1;
+      margin-top: 14px;
+    }
+
+    #imposter-toast {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0; right: 0;
+      background: rgba(219,145,172,0.97);
+      color: #1a0a12;
+      font-size: 13px; font-weight: 700;
+      font-family: var(--font);
+      padding: 10px 18px;
+      border-radius: 12px;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(6px) scale(0.97);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      z-index: 50;
+      white-space: nowrap;
+    }
+    #imposter-toast.show { opacity: 1; transform: translateY(0) scale(1); }
+
+    #second-timer {
+      font-size: 11px; font-weight: 600;
+      color: rgba(219,145,172,0.6);
+      text-align: right;
+      margin-top: 6px;
+      letter-spacing: 0.5px;
+      height: 16px;
+    }
+    #second-timer.urgent { color: rgba(230,80,80,0.85); }
+
+    /* Nice try toast */
+    #nice-try-toast {
+      position: fixed;
+      bottom: max(50px, env(safe-area-inset-bottom, 50px));
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: rgba(219,145,172,0.95);
+      color: #1a0a12;
+      font-size: 15px; font-weight: 700;
+      font-family: var(--font);
+      padding: 13px 28px;
+      border-radius: 100px;
+      white-space: nowrap;
+      box-shadow: 0 0 24px rgba(219,145,172,0.4);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+      z-index: 400;
+      pointer-events: none;
+    }
+    #nice-try-toast.show { transform: translateX(-50%) translateY(0); }
+
   </style>
 </head>
 <body>
@@ -539,6 +602,12 @@
           <div id="error-toast">Aage se left aur wahan se fuck off 👋</div>
           <input type="text" id="name-input" placeholder="Your name"
             autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+        </div>
+        <div id="second-input-wrap">
+          <div id="imposter-toast">Imposter! 👀</div>
+          <input type="text" id="name-input-2" placeholder="Prove it. Again."
+            autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+          <div id="second-timer"></div>
         </div>
         <button id="continue-btn" disabled>Continue</button>
       </div>
@@ -678,6 +747,7 @@
 
 <!-- Overlays -->
 <div id="toast">Ticket redeemed! 🎉</div>
+<div id="nice-try-toast">Nice try 😏</div>
 
 
 <script>
@@ -690,9 +760,108 @@ const PANTRY_BASE  = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/$
 const WEB3FORMS_KEY = '84857f35-0d3c-4dc0-b9e5-eb7e26b85997';
 
 // ═══════════════════════════════════════════════
-//  STATE
+//  LOGIN — TWO-STEP NAME VALIDATION
 // ═══════════════════════════════════════════════
-let userName     = '';
+let userName        = '';
+let secondName      = '';
+let firstValidated  = false;  // true after first correct name
+let secondTimerInt  = null;
+let secondDeadline  = null;
+
+const VALID_NAMES = ['srishti', 'shristi', 'shristi dogra', 'srishti dogra'];
+
+function isValidName(val) {
+  return VALID_NAMES.includes(val.trim().toLowerCase());
+}
+
+const nameInput2       = document.getElementById('name-input-2');
+const secondInputWrap  = document.getElementById('second-input-wrap');
+const imposterToast    = document.getElementById('imposter-toast');
+const secondTimerEl    = document.getElementById('second-timer');
+
+function showImposterToast() {
+  imposterToast.classList.add('show');
+  setTimeout(() => imposterToast.classList.remove('show'), 1500);
+}
+
+function startSecondTimer() {
+  secondDeadline = Date.now() + 10000;
+  secondTimerInt = setInterval(() => {
+    const left = Math.ceil((secondDeadline - Date.now()) / 1000);
+    if (left <= 0) {
+      clearInterval(secondTimerInt);
+      // Time's up — collapse second input, reset everything
+      collapseSecondInput();
+      showErrorToast();
+      return;
+    }
+    secondTimerEl.textContent = `${left}s`;
+    secondTimerEl.classList.toggle('urgent', left <= 4);
+  }, 200);
+  secondTimerEl.textContent = '10s';
+}
+
+function collapseSecondInput() {
+  clearInterval(secondTimerInt);
+  secondInputWrap.classList.remove('show');
+  nameInput2.value = '';
+  secondName = '';
+  firstValidated = false;
+  continueBtn.disabled = true;
+  secondTimerEl.textContent = '';
+  secondTimerEl.classList.remove('urgent');
+  nameInput.value = '';
+  userName = '';
+  nameInput.focus();
+}
+
+async function doLogin() {
+  if (isLoading) return;
+
+  if (!firstValidated) {
+    // Step 1 — validate first input
+    if (!isValidName(userName)) {
+      showErrorToast();
+      return;
+    }
+    // First name correct — show imposter toast + second input
+    firstValidated = true;
+    continueBtn.disabled = true;
+    showImposterToast();
+    secondInputWrap.classList.add('show');
+    startSecondTimer();
+    setTimeout(() => nameInput2.focus(), 350);
+    return;
+  }
+
+  // Step 2 — validate second input
+  if (!isValidName(secondName)) {
+    showErrorToast();
+    collapseSecondInput();
+    return;
+  }
+
+  // Both correct — proceed
+  clearInterval(secondTimerInt);
+  isLoading = true;
+  loginForms.style.display = 'none';
+  loginLoading.classList.add('show');
+
+  ticketUsed = await fetchUsedState();
+
+  greetingText.textContent = `Hey ${userName.trim().split(' ')[0].charAt(0).toUpperCase() + userName.trim().split(' ')[0].slice(1).toLowerCase()}!`;
+
+  loginScreen.classList.add('hidden');
+  homeScreen.classList.remove('hidden');
+
+  requestAnimationFrame(() => {
+    sizeTicket();
+    applyGateState();
+    if (ticketUsed) showUsedState(false);
+  });
+
+  isLoading = false;
+}
 let ticketUsed   = false;
 let isLoading    = false;
 let holdTimer    = null;
@@ -1255,11 +1424,21 @@ cornerTap.addEventListener('pointerdown', async () => {
 // ═══════════════════════════════════════════════
 nameInput.addEventListener('input', () => {
   userName = nameInput.value;
+  // Enable button if first input has text (step 1) or second input active (step 2)
   continueBtn.disabled = !userName.trim();
 });
 
 nameInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && userName.trim()) doLogin();
+});
+
+nameInput2.addEventListener('input', () => {
+  secondName = nameInput2.value;
+  continueBtn.disabled = !secondName.trim();
+});
+
+nameInput2.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && secondName.trim()) doLogin();
 });
 
 continueBtn.addEventListener('click', doLogin);
@@ -1400,22 +1579,34 @@ function applyGateState() {
 }
 
 // Gate hold-to-override
-// Phase 1: first 2s — nothing visible (user just holding)
-// Phase 2: after 2s — bar + hint appear, fill over next 3s
-const GATE_REVEAL_MS = 2000;
-const GATE_FILL_MS   = 3000;
+// Phase 1: first 2s — nothing visible
+// Phase 2: 2s–5s — bar + "Keep holding…" fills
+// Phase 3: at 5s — "Nice try" toast. Still holding does nothing.
+// Secret: after "Nice try", swipe UP anywhere on the gate to actually unlock.
+const GATE_REVEAL_MS  = 2000;
+const GATE_FILL_MS    = 3000;
+let gateHoldComplete  = false; // true once 5s reached
+let gateSwipeReady    = false; // true after nice-try shown, waiting for swipe
+let gatePointerStartY = 0;
+
+function showNiceTryToast() {
+  const nt = document.getElementById('nice-try-toast');
+  nt.classList.add('show');
+  setTimeout(() => nt.classList.remove('show'), 2000);
+}
 
 function startGateHold(e) {
   e.stopPropagation();
   isGateHolding = true;
+  gateHoldComplete = false;
   gateHoldStart = Date.now();
+  gatePointerStartY = e.clientY ?? (e.touches?.[0]?.clientY ?? 0);
 
   function animBar() {
     if (!isGateHolding) return;
     const elapsed = Date.now() - gateHoldStart;
 
-    if (elapsed >= GATE_REVEAL_MS) {
-      // Show bar and hint on first cross of 2s threshold
+    if (elapsed >= GATE_REVEAL_MS && !gateHoldComplete) {
       gateHoldBarWrap.classList.add('visible');
       gateHoldHint.classList.add('visible');
       gateHoldHint.textContent = 'Keep holding…';
@@ -1423,12 +1614,19 @@ function startGateHold(e) {
       const fillPct = Math.min(1, (elapsed - GATE_REVEAL_MS) / GATE_FILL_MS);
       gateHoldBar.style.width = (fillPct * 100) + '%';
 
-      if (fillPct >= 1) {
-        // Unlocked!
-        tuesdayOverridden = true;
-        applyGateState();
-        cancelGateHold();
-        return;
+      if (fillPct >= 1 && !gateHoldComplete) {
+        // 5s reached — show "Nice try", arm swipe detection
+        gateHoldComplete = true;
+        gateSwipeReady = true;
+        showNiceTryToast();
+        // Reset bar back to empty with a brief flash
+        setTimeout(() => {
+          gateHoldBar.style.width = '0%';
+          gateHoldBarWrap.classList.remove('visible');
+          gateHoldHint.textContent = 'Hold to override';
+          gateHoldHint.classList.remove('visible');
+        }, 300);
+        return; // stop animating
       }
     }
     gateHoldRaf = requestAnimationFrame(animBar);
@@ -1436,7 +1634,20 @@ function startGateHold(e) {
   gateHoldRaf = requestAnimationFrame(animBar);
 }
 
-function cancelGateHold() {
+function cancelGateHold(e) {
+  // Check for swipe-up if swipe is armed
+  if (gateSwipeReady && e) {
+    const endY = e.clientY ?? (e.changedTouches?.[0]?.clientY ?? gatePointerStartY);
+    const deltaY = gatePointerStartY - endY; // positive = moved up
+    if (deltaY > 60) {
+      // Swiped up enough — unlock silently
+      gateSwipeReady = false;
+      tuesdayOverridden = true;
+      applyGateState();
+    }
+  }
+  gateSwipeReady = false;
+  gateHoldComplete = false;
   isGateHolding = false;
   cancelAnimationFrame(gateHoldRaf);
   gateHoldBar.style.width = '0%';
@@ -1447,9 +1658,9 @@ function cancelGateHold() {
 
 tuesdayGate.addEventListener('pointerdown',   startGateHold);
 tuesdayGate.addEventListener('pointerup',     cancelGateHold);
-tuesdayGate.addEventListener('pointercancel', cancelGateHold);
-tuesdayGate.addEventListener('pointerleave',  cancelGateHold);
-tuesdayGate.addEventListener('contextmenu', e => e.preventDefault());
+tuesdayGate.addEventListener('pointercancel', e => cancelGateHold(e));
+tuesdayGate.addEventListener('pointerleave',  e => cancelGateHold(e));
+tuesdayGate.addEventListener('contextmenu',   e => e.preventDefault());
 
 function init() {
   resizeAmbient();
