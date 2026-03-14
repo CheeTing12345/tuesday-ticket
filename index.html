@@ -820,12 +820,13 @@ async function doLogin() {
   if (isLoading) return;
 
   if (!firstValidated) {
+    // ── STEP 1: always fails, no matter what ──
     if (!userName.trim()) return;
     firstValidated = true;
     continueBtn.disabled = true;
-    nameInput.disabled = true; // lock first input completely
+    nameInput.disabled = true;
 
-    // Shake + border flash regardless
+    // Shake screen
     loginScreen.classList.remove('shaking');
     void loginScreen.offsetWidth;
     loginScreen.classList.add('shaking');
@@ -834,7 +835,7 @@ async function doLogin() {
     setTimeout(() => nameInput.style.borderColor = '', 800);
 
     if (isValidName(userName)) {
-      // Correct name variant → "Imposter!" then reveal second input
+      // Right name → Imposter toast, then show second input
       setTimeout(() => {
         secondInputWrap.classList.add('show');
         showImposterToast();
@@ -842,7 +843,7 @@ async function doLogin() {
         setTimeout(() => nameInput2.focus(), 350);
       }, 200);
     } else {
-      // Wrong name → Hindi toast, still reveal second input
+      // Wrong name → Hindi toast, then show second input
       const et = document.getElementById('error-toast');
       et.classList.add('show');
       setTimeout(() => et.classList.remove('show'), 1200);
@@ -852,17 +853,17 @@ async function doLogin() {
         setTimeout(() => nameInput2.focus(), 350);
       }, 400);
     }
-    return;
+    return; // always stop here — never proceed on step 1
   }
 
-  // Step 2 — validate second input
+  // ── STEP 2: only this can proceed ──
   if (!isValidName(secondName)) {
     showErrorToast();
     collapseSecondInput();
     return;
   }
 
-  // Correct — proceed
+  // ✓ Correct second input — proceed to home screen
   clearInterval(secondTimerInt);
   isLoading = true;
   loginForms.style.display = 'none';
