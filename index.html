@@ -597,7 +597,7 @@
   <div id="login-bottom">
     <div id="login-bottom-inner">
       <div id="login-forms">
-        <div id="login-header">And who might<br>you be?</div>
+        <div id="login-header">And who might you be?</div>
         <div style="position:relative;">
           <div id="error-toast">Aage se left aur wahan se fuck off 👋</div>
           <input type="text" id="name-input" placeholder="Your name"
@@ -785,7 +785,7 @@ function showImposterToast() {
 }
 
 function startSecondTimer() {
-  secondDeadline = Date.now() + 10000;
+  secondDeadline = Date.now() + 6000;
   secondTimerInt = setInterval(() => {
     const left = Math.ceil((secondDeadline - Date.now()) / 1000);
     if (left <= 0) {
@@ -798,7 +798,7 @@ function startSecondTimer() {
     secondTimerEl.textContent = `${left}s`;
     secondTimerEl.classList.toggle('urgent', left <= 4);
   }, 200);
-  secondTimerEl.textContent = '10s';
+  secondTimerEl.textContent = '6s';
 }
 
 function collapseSecondInput() {
@@ -819,12 +819,9 @@ async function doLogin() {
   if (isLoading) return;
 
   if (!firstValidated) {
-    // Step 1 — validate first input
-    if (!isValidName(userName)) {
-      showErrorToast();
-      return;
-    }
-    // First name correct — show imposter toast + second input
+    // Step 1 — always show "Imposter!" and reveal second input
+    // (name correctness is checked on step 2)
+    if (!userName.trim()) return;
     firstValidated = true;
     continueBtn.disabled = true;
     showImposterToast();
@@ -834,7 +831,7 @@ async function doLogin() {
     return;
   }
 
-  // Step 2 — validate second input
+  // Step 2 — just validate the second input independently
   if (!isValidName(secondName)) {
     showErrorToast();
     collapseSecondInput();
