@@ -597,7 +597,7 @@
   <div id="login-bottom">
     <div id="login-bottom-inner">
       <div id="login-forms">
-        <div id="login-header">And who might<br>you be?</div>
+        <div id="login-header">And who might you be?</div>
         <div style="position:relative;">
           <div id="error-toast">Aage se left aur wahan se fuck off 👋</div>
           <input type="text" id="name-input" placeholder="Your name"
@@ -796,7 +796,7 @@ function startSecondTimer() {
       return;
     }
     secondTimerEl.textContent = `${left}s`;
-    secondTimerEl.classList.toggle('urgent', left <= 4);
+    secondTimerEl.classList.toggle('urgent', left <= 2);
   }, 200);
   secondTimerEl.textContent = '6s';
 }
@@ -808,6 +808,7 @@ function collapseSecondInput() {
   secondName = '';
   firstValidated = false;
   continueBtn.disabled = true;
+  nameInput.disabled = false; // re-enable first input
   secondTimerEl.textContent = '';
   secondTimerEl.classList.remove('urgent');
   nameInput.value = '';
@@ -819,26 +820,49 @@ async function doLogin() {
   if (isLoading) return;
 
   if (!firstValidated) {
-    // Step 1 — always show "Imposter!" and reveal second input
-    // (name correctness is checked on step 2)
     if (!userName.trim()) return;
     firstValidated = true;
     continueBtn.disabled = true;
-    showImposterToast();
-    secondInputWrap.classList.add('show');
-    startSecondTimer();
-    setTimeout(() => nameInput2.focus(), 350);
+    nameInput.disabled = true; // lock first input completely
+
+    // Shake + border flash regardless
+    loginScreen.classList.remove('shaking');
+    void loginScreen.offsetWidth;
+    loginScreen.classList.add('shaking');
+    loginScreen.addEventListener('animationend', () => loginScreen.classList.remove('shaking'), { once: true });
+    nameInput.style.borderColor = 'rgba(230,50,80,0.8)';
+    setTimeout(() => nameInput.style.borderColor = '', 800);
+
+    if (isValidName(userName)) {
+      // Correct name variant → "Imposter!" then reveal second input
+      setTimeout(() => {
+        secondInputWrap.classList.add('show');
+        showImposterToast();
+        startSecondTimer();
+        setTimeout(() => nameInput2.focus(), 350);
+      }, 200);
+    } else {
+      // Wrong name → Hindi toast, still reveal second input
+      const et = document.getElementById('error-toast');
+      et.classList.add('show');
+      setTimeout(() => et.classList.remove('show'), 1200);
+      setTimeout(() => {
+        secondInputWrap.classList.add('show');
+        startSecondTimer();
+        setTimeout(() => nameInput2.focus(), 350);
+      }, 400);
+    }
     return;
   }
 
-  // Step 2 — just validate the second input independently
+  // Step 2 — validate second input
   if (!isValidName(secondName)) {
     showErrorToast();
     collapseSecondInput();
     return;
   }
 
-  // Both correct — proceed
+  // Correct — proceed
   clearInterval(secondTimerInt);
   isLoading = true;
   loginForms.style.display = 'none';
@@ -846,7 +870,8 @@ async function doLogin() {
 
   ticketUsed = await fetchUsedState();
 
-  greetingText.textContent = `Hey ${userName.trim().split(' ')[0].charAt(0).toUpperCase() + userName.trim().split(' ')[0].slice(1).toLowerCase()}!`;
+  const first = secondName.trim().split(' ')[0];
+  greetingText.textContent = `Hey ${first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()}!`;
 
   loginScreen.classList.add('hidden');
   homeScreen.classList.remove('hidden');
