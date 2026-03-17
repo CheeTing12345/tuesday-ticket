@@ -495,21 +495,6 @@
       87%  { transform: translateX(-2px); }
       100% { transform: translateX(0); }
     }
-    /* Second input — hidden initially */
-    #second-input-wrap {
-      position: relative;
-      overflow: hidden;
-      max-height: 0;
-      opacity: 0;
-      transition: max-height 0.35s ease, opacity 0.35s ease, margin-top 0.35s ease;
-      margin-top: 0;
-    }
-    #second-input-wrap.show {
-      max-height: 120px;
-      opacity: 1;
-      margin-top: 14px;
-    }
-
     #imposter-toast {
       position: absolute;
       bottom: calc(100% + 8px);
@@ -538,7 +523,9 @@
       margin-top: 6px;
       letter-spacing: 0.5px;
       height: 16px;
+      display: none;
     }
+    #second-timer.show { display: block; }
     #second-timer.urgent { color: rgba(230,80,80,0.85); }
 
     /* Nice try toast */
@@ -560,6 +547,131 @@
       pointer-events: none;
     }
     #nice-try-toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── DATE PICKER SHEET ── */
+    #date-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #date-sheet.show {
+      pointer-events: auto;
+      opacity: 1;
+    }
+    #date-sheet-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,6,22,0.7);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    #date-sheet-card {
+      position: relative;
+      z-index: 1;
+      background: #1a1025;
+      border-radius: 28px 28px 0 0;
+      border-top: 1px solid rgba(219,145,172,0.15);
+      padding: 28px 24px max(32px, env(safe-area-inset-bottom, 32px));
+      transform: translateY(100%);
+      transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    }
+    #date-sheet.show #date-sheet-card {
+      transform: translateY(0);
+    }
+    #date-sheet-handle {
+      width: 36px; height: 4px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+      margin: 0 auto 24px;
+    }
+    #date-sheet-title {
+      font-size: 20px; font-weight: 700;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    #date-sheet-sub {
+      font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    #date-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .date-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border-radius: 16px;
+      border: 1.5px solid rgba(219,145,172,0.2);
+      background: rgba(219,145,172,0.05);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .date-option.selected {
+      border-color: var(--pink);
+      background: rgba(219,145,172,0.12);
+    }
+    .date-option-radio {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid rgba(219,145,172,0.4);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s;
+    }
+    .date-option.selected .date-option-radio {
+      border-color: var(--pink);
+      background: var(--pink);
+    }
+    .date-option.selected .date-option-radio::after {
+      content: '';
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .date-option-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .date-option-week {
+      font-size: 13px; font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.3px;
+    }
+    .date-option-dates {
+      font-size: 12px; font-weight: 500;
+      color: rgba(255,255,255,0.45);
+    }
+    #date-confirm-btn {
+      width: 100%;
+      background: var(--pink);
+      color: #fff;
+      font-size: 16px; font-weight: 700;
+      font-family: var(--font);
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+      -webkit-appearance: none;
+    }
+    #date-confirm-btn.ready { opacity: 1; }
+    #date-confirm-btn.ready:active { opacity: 0.85; }
 
   </style>
 </head>
@@ -597,15 +709,11 @@
   <div id="login-bottom">
     <div id="login-bottom-inner">
       <div id="login-forms">
-        <div id="login-header">And who might you be?</div>
+        <div id="login-header">And who might<br>you be?</div>
         <div style="position:relative;">
           <div id="error-toast">Aage se left aur wahan se fuck off 👋</div>
-          <input type="text" id="name-input" placeholder="Your name"
-            autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
-        </div>
-        <div id="second-input-wrap">
           <div id="imposter-toast">Imposter! 👀</div>
-          <input type="text" id="name-input-2" placeholder="Prove it. Again."
+          <input type="text" id="name-input" placeholder="Your name"
             autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
           <div id="second-timer"></div>
         </div>
@@ -750,6 +858,20 @@
 <div id="nice-try-toast">Nice try 😏</div>
 
 
+<!-- Date picker sheet -->
+<div id="date-sheet">
+  <div id="date-sheet-backdrop"></div>
+  <div id="date-sheet-card">
+    <div id="date-sheet-handle"></div>
+    <div id="date-sheet-title">Pick a weekend ✦</div>
+    <div id="date-sheet-sub">When works best for you?</div>
+    <div id="date-options">
+      <!-- Populated by JS -->
+    </div>
+    <button id="date-confirm-btn" disabled>Confirm</button>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════
 //  CONFIG — fill in your Pantry ID below
@@ -759,132 +881,6 @@ const BASKET_NAME  = 'ticket';
 const PANTRY_BASE  = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
 const WEB3FORMS_KEY = '84857f35-0d3c-4dc0-b9e5-eb7e26b85997';
 
-// ═══════════════════════════════════════════════
-//  LOGIN — TWO-STEP NAME VALIDATION
-// ═══════════════════════════════════════════════
-let userName        = '';
-let secondName      = '';
-let firstValidated  = false;  // true after first correct name
-let secondTimerInt  = null;
-let secondDeadline  = null;
-
-const VALID_NAMES = ['srishti', 'shristi', 'shristi dogra', 'srishti dogra'];
-
-function isValidName(val) {
-  return VALID_NAMES.includes(val.trim().toLowerCase());
-}
-
-const nameInput2       = document.getElementById('name-input-2');
-const secondInputWrap  = document.getElementById('second-input-wrap');
-const imposterToast    = document.getElementById('imposter-toast');
-const secondTimerEl    = document.getElementById('second-timer');
-
-function showImposterToast() {
-  imposterToast.classList.add('show');
-  setTimeout(() => imposterToast.classList.remove('show'), 1500);
-}
-
-function startSecondTimer() {
-  secondDeadline = Date.now() + 6000;
-  secondTimerInt = setInterval(() => {
-    const left = Math.ceil((secondDeadline - Date.now()) / 1000);
-    if (left <= 0) {
-      clearInterval(secondTimerInt);
-      // Time's up — collapse second input, reset everything
-      collapseSecondInput();
-      showErrorToast();
-      return;
-    }
-    secondTimerEl.textContent = `${left}s`;
-    secondTimerEl.classList.toggle('urgent', left <= 2);
-  }, 200);
-  secondTimerEl.textContent = '6s';
-}
-
-function collapseSecondInput() {
-  clearInterval(secondTimerInt);
-  secondInputWrap.classList.remove('show');
-  nameInput2.value = '';
-  secondName = '';
-  firstValidated = false;
-  continueBtn.disabled = true;
-  nameInput.disabled = false; // re-enable first input
-  secondTimerEl.textContent = '';
-  secondTimerEl.classList.remove('urgent');
-  nameInput.value = '';
-  userName = '';
-  nameInput.focus();
-}
-
-async function doLogin() {
-  if (isLoading) return;
-
-  if (!firstValidated) {
-    // ── STEP 1: always fails, no matter what ──
-    if (!userName.trim()) return;
-    firstValidated = true;
-    continueBtn.disabled = true;
-    nameInput.disabled = true;
-
-    // Shake screen
-    loginScreen.classList.remove('shaking');
-    void loginScreen.offsetWidth;
-    loginScreen.classList.add('shaking');
-    loginScreen.addEventListener('animationend', () => loginScreen.classList.remove('shaking'), { once: true });
-    nameInput.style.borderColor = 'rgba(230,50,80,0.8)';
-    setTimeout(() => nameInput.style.borderColor = '', 800);
-
-    if (isValidName(userName)) {
-      // Right name → Imposter toast, then show second input
-      setTimeout(() => {
-        secondInputWrap.classList.add('show');
-        showImposterToast();
-        startSecondTimer();
-        setTimeout(() => nameInput2.focus(), 350);
-      }, 200);
-    } else {
-      // Wrong name → Hindi toast, then show second input
-      const et = document.getElementById('error-toast');
-      et.classList.add('show');
-      setTimeout(() => et.classList.remove('show'), 1200);
-      setTimeout(() => {
-        secondInputWrap.classList.add('show');
-        startSecondTimer();
-        setTimeout(() => nameInput2.focus(), 350);
-      }, 400);
-    }
-    return; // always stop here — never proceed on step 1
-  }
-
-  // ── STEP 2: only this can proceed ──
-  if (!isValidName(secondName)) {
-    showErrorToast();
-    collapseSecondInput();
-    return;
-  }
-
-  // ✓ Correct second input — proceed to home screen
-  clearInterval(secondTimerInt);
-  isLoading = true;
-  loginForms.style.display = 'none';
-  loginLoading.classList.add('show');
-
-  ticketUsed = await fetchUsedState();
-
-  const first = secondName.trim().split(' ')[0];
-  greetingText.textContent = `Hey ${first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()}!`;
-
-  loginScreen.classList.add('hidden');
-  homeScreen.classList.remove('hidden');
-
-  requestAnimationFrame(() => {
-    sizeTicket();
-    applyGateState();
-    if (ticketUsed) showUsedState(false);
-  });
-
-  isLoading = false;
-}
 let ticketUsed   = false;
 let isLoading    = false;
 let holdTimer    = null;
@@ -900,6 +896,137 @@ let shakeOffset = 0;
 let idleAngle = 0;
 let lastFrameTime = 0;
 let gyroEnabled = false;
+
+// ═══════════════════════════════════════════════
+//  LOGIN — SINGLE INPUT, TWO-ATTEMPT VALIDATION
+// ═══════════════════════════════════════════════
+let userName       = '';
+let waitingRetry   = false;  // true after first attempt, waiting for re-entry
+let retryDeadline  = null;
+let retryTimerInt  = null;
+
+const VALID_NAMES = ['srishti', 'shristi', 'dogra', 'shristi dogra', 'srishti dogra'];
+
+function isValidName(val) {
+  return VALID_NAMES.includes(val.trim().toLowerCase());
+}
+
+function shakeLogin() {
+  loginScreen.classList.remove('shaking');
+  void loginScreen.offsetWidth;
+  loginScreen.classList.add('shaking');
+  loginScreen.addEventListener('animationend', () => loginScreen.classList.remove('shaking'), { once: true });
+  nameInput.style.borderColor = 'rgba(230,50,80,0.8)';
+  setTimeout(() => nameInput.style.borderColor = '', 800);
+}
+
+function showHindiToast() {
+  const et = document.getElementById('error-toast');
+  et.classList.add('show');
+  setTimeout(() => et.classList.remove('show'), 1400);
+}
+
+function showImposterToast() {
+  const it = document.getElementById('imposter-toast');
+  it.classList.add('show');
+  setTimeout(() => it.classList.remove('show'), 1400);
+}
+
+function startRetryTimer() {
+  retryDeadline = Date.now() + 6000;
+  secondTimerEl.textContent = '6s';
+  secondTimerEl.classList.add('show');
+  retryTimerInt = setInterval(() => {
+    const left = Math.ceil((retryDeadline - Date.now()) / 1000);
+    if (left <= 0) {
+      clearInterval(retryTimerInt);
+      resetLogin();
+      return;
+    }
+    secondTimerEl.textContent = `${left}s`;
+    secondTimerEl.classList.toggle('urgent', left <= 2);
+  }, 200);
+}
+
+function resetLogin() {
+  clearInterval(retryTimerInt);
+  waitingRetry = false;
+  userName = '';
+  nameInput.value = '';
+  nameInput.disabled = false;
+  nameInput.placeholder = 'Your name';
+  continueBtn.disabled = true;
+  secondTimerEl.textContent = '';
+  secondTimerEl.classList.remove('show', 'urgent');
+  nameInput.focus();
+}
+
+async function doLogin() {
+  if (isLoading) return;
+  if (!userName.trim()) return;
+
+  if (!waitingRetry) {
+    // ── FIRST ATTEMPT — always fails ──
+    continueBtn.disabled = true;
+    nameInput.disabled = true;
+    shakeLogin();
+
+    if (isValidName(userName)) {
+      // Correct name → Imposter toast, clear field, start 6s timer
+      showImposterToast();
+      setTimeout(() => {
+        waitingRetry = true;
+        userName = '';
+        nameInput.value = '';
+        nameInput.disabled = false;
+        nameInput.placeholder = 'Try again…';
+        continueBtn.disabled = true;
+        nameInput.focus();
+        startRetryTimer();
+      }, 600);
+    } else {
+      // Wrong name → Hindi toast, clear field, but NO timer — just reset
+      showHindiToast();
+      setTimeout(() => {
+        resetLogin();
+        nameInput.placeholder = 'Your name';
+      }, 600);
+    }
+    return;
+  }
+
+  // ── SECOND ATTEMPT — within 6 seconds ──
+  if (!isValidName(userName)) {
+    shakeLogin();
+    showHindiToast();
+    setTimeout(() => resetLogin(), 600);
+    return;
+  }
+
+  // ✓ Passed — proceed
+  clearInterval(retryTimerInt);
+  isLoading = true;
+  secondTimerEl.classList.remove('show', 'urgent');
+  secondTimerEl.textContent = '';
+  loginForms.style.display = 'none';
+  loginLoading.classList.add('show');
+
+  ticketUsed = await fetchUsedState();
+
+  const first = userName.trim().split(' ')[0];
+  greetingText.textContent = `Hey ${first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()}!`;
+
+  loginScreen.classList.add('hidden');
+  homeScreen.classList.remove('hidden');
+
+  requestAnimationFrame(() => {
+    sizeTicket();
+    applyGateState();
+    if (ticketUsed) showUsedState(false);
+  });
+
+  isLoading = false;
+}
 
 // ═══════════════════════════════════════════════
 //  GETPANTRY API
@@ -946,15 +1073,18 @@ async function writeUsedState(used) {
   } catch {}
 }
 
-async function sendEmail(name) {
+async function sendEmail(name, preferredDate) {
   try {
+    const msg = preferredDate
+      ? `${name} just redeemed their ticket.\n\nPreferred weekend: ${preferredDate}`
+      : `${name} just redeemed their ticket.`;
     await fetch('https://api.web3forms.com/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         access_key: WEB3FORMS_KEY,
         subject: '🎟️ Ticket Redeemed!',
-        message: `${name} just redeemed their ticket.`
+        message: msg
       })
     });
   } catch {}
@@ -992,6 +1122,93 @@ const cdSecs       = document.getElementById('cd-secs');
 const gateHoldBar  = document.getElementById('gate-hold-bar');
 const gateHoldBarWrap = document.getElementById('gate-hold-bar-wrap');
 const gateHoldHint = document.getElementById('gate-hold-hint');
+const secondTimerEl = document.getElementById('second-timer');
+const dateSheet     = document.getElementById('date-sheet');
+const dateOptions   = document.getElementById('date-options');
+const dateConfirmBtn = document.getElementById('date-confirm-btn');
+
+// ═══════════════════════════════════════════════
+//  DATE PICKER
+// ═══════════════════════════════════════════════
+let selectedWeekend = null;
+
+function getNextWeekends(count) {
+  const weekends = [];
+  const now = new Date();
+  const d = new Date(now);
+  // Advance to next Friday
+  const day = d.getDay(); // 0=Sun,1=Mon,...5=Fri,6=Sat
+  let daysUntilFri = (5 - day + 7) % 7;
+  if (daysUntilFri === 0) daysUntilFri = 7; // if today is Friday, get next one
+  d.setDate(d.getDate() + daysUntilFri);
+
+  while (weekends.length < count) {
+    const fri = new Date(d);
+    const sat = new Date(d);
+    sat.setDate(fri.getDate() + 1);
+    weekends.push({ fri, sat });
+    d.setDate(d.getDate() + 7);
+  }
+  return weekends;
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+}
+
+function buildDateOptions() {
+  const weekends = getNextWeekends(6);
+  dateOptions.innerHTML = '';
+  selectedWeekend = null;
+  dateConfirmBtn.disabled = true;
+  dateConfirmBtn.classList.remove('ready');
+
+  weekends.forEach((w, i) => {
+    const el = document.createElement('div');
+    el.className = 'date-option';
+    el.innerHTML = `
+      <div class="date-option-radio"></div>
+      <div class="date-option-text">
+        <div class="date-option-week">Weekend ${i + 1}</div>
+        <div class="date-option-dates">${formatDate(w.fri)} (Fri) &nbsp;·&nbsp; ${formatDate(w.sat)} (Sat)</div>
+      </div>`;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.date-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedWeekend = `Weekend ${i + 1}: ${formatDate(w.fri)} (Fri) – ${formatDate(w.sat)} (Sat)`;
+      dateConfirmBtn.disabled = false;
+      dateConfirmBtn.classList.add('ready');
+    });
+    dateOptions.appendChild(el);
+  });
+}
+
+function showDateSheet() {
+  buildDateOptions();
+  dateSheet.classList.add('show');
+}
+
+function hideDateSheet() {
+  dateSheet.classList.remove('show');
+}
+
+// Confirm button
+dateConfirmBtn.addEventListener('click', async () => {
+  if (!selectedWeekend) return;
+  hideDateSheet();
+  // Send email with preferred date
+  sendEmail(userName.trim(), selectedWeekend);
+  // Confetti + toast
+  await delay(100);
+  launchConfetti();
+  await delay(4200);
+  showToast();
+});
+
+// Backdrop tap to dismiss (does NOT proceed — must pick a date)
+document.getElementById('date-sheet-backdrop').addEventListener('click', () => {
+  // Do nothing — force them to pick
+});
 
 // ═══════════════════════════════════════════════
 //  TICKET SIZING
@@ -1211,42 +1428,6 @@ function mainLoop(ts) {
 }
 
 // ═══════════════════════════════════════════════
-//  LOGIN → HOME TRANSITION
-// ═══════════════════════════════════════════════
-async function doLogin() {
-  if (isLoading || !userName.trim()) return;
-
-  // Name must be Srishti (case-insensitive)
-  if (userName.trim().toLowerCase() !== 'srishti') {
-    showErrorToast();
-    return;
-  }
-
-  isLoading = true;
-
-  // Show spinner, hide form
-  loginForms.style.display = 'none';
-  loginLoading.classList.add('show');
-
-  ticketUsed = await fetchUsedState();
-
-  greetingText.textContent = `Hey ${userName.trim()}!`;
-
-  // Transition
-  loginScreen.classList.add('hidden');
-  homeScreen.classList.remove('hidden');
-
-  // Size ticket on next frame
-  requestAnimationFrame(() => {
-    sizeTicket();
-    applyGateState();
-    if (ticketUsed) showUsedState(false); // instant, no animation
-  });
-
-  isLoading = false;
-}
-
-// ═══════════════════════════════════════════════
 //  HOLD INTERACTION
 // ═══════════════════════════════════════════════
 function startHold(e) {
@@ -1314,7 +1495,7 @@ async function fireRedeem() {
   stubWrapper.style.transition = '';
   stubWrapper.classList.add('tearing');
 
-  await delay(950); // 0.75s anim + buffer
+  await delay(950);
 
   stubWrapper.style.display = 'none';
 
@@ -1324,17 +1505,12 @@ async function fireRedeem() {
   ticketUsed = true;
   showUsedState(true);
 
-  // Write state + email
+  // Write used state immediately
   writeUsedState(true);
-  sendEmail(userName.trim());
 
-  // Confetti
-  await delay(100);
-  launchConfetti();
-
-  // Toast after confetti
-  await delay(4200);
-  showToast();
+  // Show date picker — email sent only after they confirm
+  await delay(400);
+  showDateSheet();
 }
 
 function showUsedState(animated) {
@@ -1447,21 +1623,11 @@ cornerTap.addEventListener('pointerdown', async () => {
 // ═══════════════════════════════════════════════
 nameInput.addEventListener('input', () => {
   userName = nameInput.value;
-  // Enable button if first input has text (step 1) or second input active (step 2)
   continueBtn.disabled = !userName.trim();
 });
 
 nameInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && userName.trim()) doLogin();
-});
-
-nameInput2.addEventListener('input', () => {
-  secondName = nameInput2.value;
-  continueBtn.disabled = !secondName.trim();
-});
-
-nameInput2.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && secondName.trim()) doLogin();
 });
 
 continueBtn.addEventListener('click', doLogin);
@@ -1497,23 +1663,6 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 // ═══════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════
-function showErrorToast() {
-  const et = document.getElementById('error-toast');
-  // Shake entire login screen
-  loginScreen.classList.remove('shaking');
-  void loginScreen.offsetWidth; // reflow
-  loginScreen.classList.add('shaking');
-  loginScreen.addEventListener('animationend', () => loginScreen.classList.remove('shaking'), { once: true });
-
-  // Show toast above input
-  et.classList.add('show');
-  setTimeout(() => et.classList.remove('show'), 1200);
-
-  // Shake input border
-  nameInput.style.borderColor = 'rgba(230,50,80,0.8)';
-  setTimeout(() => nameInput.style.borderColor = '', 800);
-}
-
 // ═══════════════════════════════════════════════
 //  TUESDAY GATE
 // ═══════════════════════════════════════════════
