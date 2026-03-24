@@ -1676,7 +1676,7 @@ let countdownInterval = null;
 // IST offset = UTC+5:30
 function getNowIST() {
   const now = new Date();
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 100000;
   return new Date(utcMs + 5.5 * 3600000);
 }
 
