@@ -999,7 +999,7 @@ async function doLogin() {
   if (!isValidName(userName)) {
     shakeLogin();
     showHindiToast();
-    setTimeout(() => resetLogin(), 600);
+    setTimeout(() => resetLogin(), 1000);
     return;
   }
 
