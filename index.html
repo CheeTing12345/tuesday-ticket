@@ -983,7 +983,7 @@ async function doLogin() {
         continueBtn.disabled = true;
         nameInput.focus();
         startRetryTimer();
-      }, 600);
+      }, 1000);
     } else {
       // Wrong name → Hindi toast, clear field, but NO timer — just reset
       showHindiToast();
