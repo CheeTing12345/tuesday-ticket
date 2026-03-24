@@ -933,8 +933,8 @@ function showImposterToast() {
 }
 
 function startRetryTimer() {
-  retryDeadline = Date.now() + 6000;
-  secondTimerEl.textContent = '6s';
+  retryDeadline = Date.now() + 10000;
+  secondTimerEl.textContent = '10s';
   secondTimerEl.classList.add('show');
   retryTimerInt = setInterval(() => {
     const left = Math.ceil((retryDeadline - Date.now()) / 1000);
@@ -990,7 +990,7 @@ async function doLogin() {
       setTimeout(() => {
         resetLogin();
         nameInput.placeholder = 'Your name';
-      }, 600);
+      }, 1000);
     }
     return;
   }
